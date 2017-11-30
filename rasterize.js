@@ -4,7 +4,7 @@
 const INPUT_TRIANGLES_URL = "./cubes.json"; // triangles file loc
 const INPUT_SPHERES_URL = "./spheres.json"; // ellipsoids file loc
 var lightAmbient = vec3.fromValues(1, 1, 1); // default light ambient emission
-var defaultEye = vec3.fromValues(0,0,-0.5); // default eye position in world space
+var defaultEye = vec3.fromValues(0,0,-0.8); // default eye position in world space
 var defaultCenter = vec3.fromValues(0,0,0.5); // default view direction in world space
 var defaultUp = vec3.fromValues(0,1,0); // default view up vector
 
@@ -25,7 +25,9 @@ var vPosAttribLoc; // where to put position for vertex shader
 var mMatrixULoc; // where to put model matrix for vertex shader
 var pvmMatrixULoc; // where to put project model view matrix for vertex shader
 var ambientULoc; // where to put ambient reflecivity for fragment shader
-
+var diffuseULoc; // where to put diffuse reflecivity for fragment shader
+var specularULoc; // where to put specular reflecivity for fragment shader
+var shininessULoc; // where to put specular exponent for fragment shader
 
 // ASSIGNMENT HELPER FUNCTIONS
 
