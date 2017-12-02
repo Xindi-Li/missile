@@ -3,15 +3,15 @@
 /* assignment specific globals */
 const INPUT_TRIANGLES_URL = "./cubes.json"; // triangles file loc
 const INPUT_SPHERES_URL = "./spheres.json"; // ellipsoids file loc
-const INPUT_MISSILES_URL = "./missiles.json";
 
-var defaultEye = vec3.fromValues(0, 0, -0.8); // default eye position in world space
+
+var defaultEye = vec3.fromValues(0, 0, -0.5); // default eye position in world space
 var defaultCenter = vec3.fromValues(0, 0, 0.5); // default view direction in world space
 var defaultUp = vec3.fromValues(0, 1, 0); // default view up vector
 var lightAmbient = vec3.fromValues(1, 1, 1); // default light ambient emission
 var lightDiffuse = vec3.fromValues(1, 1, 1); // default light diffuse emission
 var lightSpecular = vec3.fromValues(1, 1, 1); // default light specular emission
-var lightPosition = vec3.fromValues(2, 4, -0.5); // default light position
+var lightPosition = vec3.fromValues(0, 0, -0.5); // default light position
 /* webgl and geometry data */
 var gl = null; // the all powerful gl object. It's all here folks!
 var inputTriangles = []; // the triangle data as loaded from input files
@@ -113,7 +113,7 @@ function loadModels() {
             // process each triangle set to load webgl vertex and triangle buffers
             numTriangleSets = inputTriangles.length; // remember how many tri sets
             for (var whichSet = 0; whichSet < numTriangleSets; whichSet++) { // for each tri set
-
+                inputTriangles[whichSet].alive = true;
                 // set up the vertex and normal arrays, define model center and axes
                 inputTriangles[whichSet].glVertices = []; // flat coord list for webgl
                 inputTriangles[whichSet].glNormals = []; // flat normal list for webgl
@@ -124,6 +124,11 @@ function loadModels() {
                     inputTriangles[whichSet].glVertices.push(vtxToAdd[0], vtxToAdd[1], vtxToAdd[2]); // put coords in set coord list
                     inputTriangles[whichSet].glNormals.push(normToAdd[0], normToAdd[1], normToAdd[2]); // put normal in set coord list
                 } // end for vertices in set
+                inputTriangles[whichSet].center = [
+                    (inputTriangles[whichSet].vertices[2][0] + inputTriangles[whichSet].vertices[3][0]) / 2,
+                    (inputTriangles[whichSet].vertices[2][1] + inputTriangles[whichSet].vertices[3][1]) / 2,
+                    (inputTriangles[whichSet].vertices[2][2] + inputTriangles[whichSet].vertices[3][2]) / 2,
+                ];
 
                 // send the vertex coords and normals to webGL
                 vertexBuffers[whichSet] = gl.createBuffer(); // init empty webgl set vertex coord buffer
@@ -157,8 +162,12 @@ function loadModels() {
 
                 var latitudeBands = 30;
                 var longitudeBands = 30;
-                var radius = 0.1;
+
                 for (var whichSet = 0; whichSet < inputSpheres.length; whichSet++) {
+                    if (inputSpheres[whichSet].type == "missile") {
+                        inputSpheres[whichSet].mMatrix = mat4.create();
+                    }
+                    inputSpheres[whichSet].alive = true;
                     var coordArray = [];
                     var indexArray = [];
                     var normalArray = [];
@@ -166,6 +175,7 @@ function loadModels() {
                     var xc = inputSpheres[whichSet].x;
                     var yc = inputSpheres[whichSet].y;
                     var zc = inputSpheres[whichSet].z;
+                    var radius = inputSpheres[whichSet].r;
 
                     for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
                         var theta = latNumber * Math.PI / latitudeBands;
@@ -365,6 +375,7 @@ function setupShaders() {
     } // end catch
 } // end setup shaders
 
+var speed = 0.002;
 // render the loaded model
 function renderModels() {
     var pMatrix = mat4.create(); // projection matrix
@@ -387,6 +398,9 @@ function renderModels() {
     var currSet; // the tri set and its material properties
     for (var whichTriSet = 0; whichTriSet < numTriangleSets; whichTriSet++) {
         currSet = inputTriangles[whichTriSet];
+        if (!currSet.alive) {
+            continue;
+        }
 
         mat4.multiply(pvmMatrix, pvMatrix, mMatrix); // project * view * model
         gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in the m matrix
@@ -417,8 +431,44 @@ function renderModels() {
     for (var whichSphere = 0; whichSphere < inputSpheres.length; whichSphere++) {
         sphere = inputSpheres[whichSphere];
 
-        pvmMatrix = mat4.multiply(pvmMatrix, pvMatrix, mMatrix); // premultiply with pv matrix
-        gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in model matrix
+        var angle;
+        var distance;
+        var center1 = vec4.fromValues(sphere.x, sphere.y, sphere.z, 1.0);
+        if (sphere.type == "battery") {
+            pvmMatrix = mat4.multiply(pvmMatrix, pvMatrix, mMatrix); // premultiply with pv matrix
+            gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in model matrix
+        }
+        if (sphere.type == "missile") {
+            mat4.multiply(center1, sphere.mMatrix, center1);
+            if (whichSphere <= 5) {
+                angle = Math.atan2(sphere.y - inputSpheres[whichSphere - 3].y, sphere.x - inputSpheres[whichSphere - 3].x);
+                distance = Math.sqrt(
+                    (center1[1] - inputSpheres[whichSphere - 3].y) * (center1[1] - inputSpheres[whichSphere - 3].y) +
+                    (center1[0] - inputSpheres[whichSphere - 3].x) * (center1[0] - inputSpheres[whichSphere - 3].x)
+                )
+                if (distance <= sphere.r + inputSpheres[whichSphere - 3].r) {
+                    sphere.alive = false;
+                    inputSpheres[whichSphere - 3].alive = false;
+                }
+            } else {
+                angle = Math.atan2(sphere.y - inputTriangles[whichSphere - 6].center[1], sphere.x - inputTriangles[whichSphere - 6].center[0]);
+                distance = Math.sqrt(
+                    (center1[1] - inputTriangles[whichSphere - 6].center[1]) * (center1[1] - inputTriangles[whichSphere - 6].center[1]) +
+                    (center1[0] - inputTriangles[whichSphere - 6].center[0]) * (center1[0] - inputTriangles[whichSphere - 6].center[0])
+                )
+                if (distance <= sphere.r) {
+                    sphere.alive = false;
+                    inputTriangles[whichSphere - 6].alive = false;
+                }
+            }
+            mat4.translate(sphere.mMatrix, sphere.mMatrix, [-speed * Math.cos(angle), -speed * Math.sin(angle), 0]);
+            pvmMatrix = mat4.multiply(pvmMatrix, pvMatrix, sphere.mMatrix);
+            gl.uniformMatrix4fv(mMatrixULoc, false, sphere.mMatrix); // pass in model matrix
+        }
+
+        if (!sphere.alive) {
+            continue;
+        }
         gl.uniformMatrix4fv(pvmMatrixULoc, false, pvmMatrix); // pass in the hpvm matrix
 
         // reflectivity: feed to the fragment shader
@@ -447,6 +497,7 @@ function main() {
     setupWebGL(); // set up the webGL environment
     loadModels(); // load in the models from tri file
     setupShaders(); // setup the webGL shaders
+    //setTimeout(renderModels,2000);
     renderModels(); // draw the triangles using webGL
 
 } // end main
