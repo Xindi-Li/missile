@@ -77,7 +77,7 @@ function handleclick(e) {
     if (inputSpheres[battery_num].alive) {
         ammos--;
         drawscore(context);
-        inputSpheres[anticount].status = true;
+        inputSpheres[anticount].alive = true;
         inputSpheres[anticount].destination = [x, y];
         inputSpheres[anticount].angle = Math.atan2(y - inputSpheres[anticount].y, x - inputSpheres[anticount].x);
     }
@@ -209,7 +209,8 @@ function loadModels() {
                     if (inputSpheres[whichSet].type != "battery") {
                         inputSpheres[whichSet].mMatrix = mat4.create();
                     }
-                    inputSpheres[whichSet].alive = true;
+
+                    inputSpheres[whichSet].alive = inputSpheres[whichSet].type != "anti";
                     var coordArray = [];
                     var indexArray = [];
                     var normalArray = [];
@@ -513,10 +514,25 @@ function renderModels() {
             gl.uniformMatrix4fv(mMatrixULoc, false, sphere.mMatrix); // pass in model matrix
         }
         if (sphere.type == "anti") {
-            if (!sphere.status) continue;
             mat4.multiply(center1, sphere.mMatrix, center1);
+
+            for (var i = 3; i < 12; i++) {
+                if (!inputSpheres[i].alive) continue;
+                var sphere1 = inputSpheres[i];
+                var center2 = vec4.fromValues(sphere1.x, sphere1.y, sphere1.z, 1.0);
+                mat4.multiply(center2, sphere1.mMatrix, center2);
+                //console.log(getdist(center1[0] - center2[0], center1[1] - center2[1]));
+                if (getdist(center1[0] - center2[0], center1[1] - center2[1]) <= sphere.r + sphere1.r) {
+                    sphere.alive = false;
+                    sphere1.alive = false;
+                    score += 100;
+                    drawscore(context);
+                    break;
+                }
+            }
+            if (!sphere.alive) continue;
             if (getdist(center1[0] - sphere.destination[0], center1[1] - sphere.destination[1]) <= 0.005) {
-                sphere.status = false;
+                sphere.alive = false;
                 continue;
             }
             mat4.translate(sphere.mMatrix, sphere.mMatrix, [antispeed * Math.cos(sphere.angle), antispeed * Math.sin(sphere.angle), 0]);
