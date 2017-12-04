@@ -80,6 +80,7 @@ function handleclick(e) {
         if (anticount > 23) return;
         battery_num = inputSpheres[anticount].battery;
     }
+    inputSpheres[battery_num].ammo--;
     ammos--;
     drawscore(context);
     launch.play();
@@ -506,6 +507,8 @@ function renderModels() {
                     sphere.alive = false;
                     inputSpheres[whichSphere - 3].alive = false;
                     explosion.play();
+                    ammos -= inputSpheres[whichSphere - 3].ammo;
+                    drawscore(context);
                 }
             } else {
                 angle = Math.atan2(sphere.y - inputTriangles[whichSphere - 6].center[1], sphere.x - inputTriangles[whichSphere - 6].center[0]);

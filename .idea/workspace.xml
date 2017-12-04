@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e7d36b86-cd16-4a78-bbc8-d9ccbba888e3" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/rasterize.js" afterPath="$PROJECT_DIR$/rasterize.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/spheres.json" afterPath="$PROJECT_DIR$/spheres.json" />
     </list>
@@ -22,8 +21,8 @@
       <file leaf-file-name="rasterize.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/rasterize.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="440">
-              <caret line="430" column="21" lean-forward="false" selection-start-line="430" selection-start-column="21" selection-end-line="430" selection-end-column="21" />
+            <state relative-caret-position="393">
+              <caret line="510" column="39" lean-forward="false" selection-start-line="510" selection-start-column="39" selection-end-line="510" selection-end-column="39" />
               <folding />
             </state>
           </provider>
@@ -32,8 +31,8 @@
       <file leaf-file-name="spheres.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/spheres.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="391">
-              <caret line="23" column="156" lean-forward="false" selection-start-line="23" selection-start-column="156" selection-end-line="23" selection-end-column="156" />
+            <state relative-caret-position="102">
+              <caret line="6" column="146" lean-forward="true" selection-start-line="6" selection-start-column="146" selection-end-line="6" selection-end-column="146" />
               <folding />
             </state>
           </provider>
@@ -278,12 +277,12 @@
       <workItem from="1512055907827" duration="19761000" />
       <workItem from="1512238917801" duration="15244000" />
       <workItem from="1512342658950" duration="2865000" />
-      <workItem from="1512401006383" duration="9142000" />
+      <workItem from="1512401006383" duration="9641000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="79220000" />
+    <option name="totallyTimeSpent" value="79719000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
@@ -591,16 +590,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/spheres.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="391">
-          <caret line="23" column="156" lean-forward="false" selection-start-line="23" selection-start-column="156" selection-end-line="23" selection-end-column="156" />
+        <state relative-caret-position="102">
+          <caret line="6" column="146" lean-forward="true" selection-start-line="6" selection-start-column="146" selection-end-line="6" selection-end-column="146" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/rasterize.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="440">
-          <caret line="430" column="21" lean-forward="false" selection-start-line="430" selection-start-column="21" selection-end-line="430" selection-end-column="21" />
+        <state relative-caret-position="393">
+          <caret line="510" column="39" lean-forward="false" selection-start-line="510" selection-start-column="39" selection-end-line="510" selection-end-column="39" />
           <folding />
         </state>
       </provider>
