@@ -36,10 +36,11 @@ var shininessULoc; // where to put specular exponent for fragment shader
 var anticount = 12;
 var missilecount = 0;
 var score = 0;
-var ammos = 9;
+var ammos = 12;
 
 var Eye = vec3.clone(defaultEye); // eye position in world space
-// ASSIGNMENT HELPER FUNCTIONS
+var explosion = new Audio('explosion.mp3');
+var launch = new Audio('launch.mp3');
 
 // get the JSON file from the passed URL
 function getJSONFile(url, descr) {
@@ -70,18 +71,21 @@ function getJSONFile(url, descr) {
 
 
 function handleclick(e) {
-    if (anticount > 20) return;
+    if (anticount > 23) return;
     var x = (e.pageX - 400) / 400;
     var y = -(e.pageY - 400) / 400;
-    console.log("x= " + x + "y= " + y);
     var battery_num = inputSpheres[anticount].battery;
-    if (inputSpheres[battery_num].alive) {
-        ammos--;
-        drawscore(context);
-        inputSpheres[anticount].alive = true;
-        inputSpheres[anticount].destination = [x, y];
-        inputSpheres[anticount].angle = Math.atan2(y - inputSpheres[anticount].y, x - inputSpheres[anticount].x);
+    while (!inputSpheres[battery_num].alive) {
+        anticount++;
+        if (anticount > 23) return;
+        battery_num = inputSpheres[anticount].battery;
     }
+    ammos--;
+    drawscore(context);
+    launch.play();
+    inputSpheres[anticount].alive = true;
+    inputSpheres[anticount].destination = [x, y];
+    inputSpheres[anticount].angle = Math.atan2(y - inputSpheres[anticount].y, x - inputSpheres[anticount].x);
     anticount++;
 }
 var bkgdImage = new Image();
@@ -133,7 +137,7 @@ function drawscore(context) {
 
     context.font = "20px Arial";
     context.fillText("Score: " + score, 700, 20);
-    context.fillText("Ammo: " + ammos, 700, 40);
+    context.fillText("Ammo: " + ammos, 700, 45);
     context.stroke();
 }
 
@@ -423,8 +427,8 @@ function getdist(xv, yv) {
     return Math.sqrt(xv * xv + yv * yv);
 }
 
-var mspeed = 0.002;
-var antispeed = 0.01;
+var mspeed = 0.001;
+var antispeed = 0.015;
 // render the loaded model
 function renderModels() {
     var pMatrix = mat4.create(); // projection matrix
@@ -490,7 +494,7 @@ function renderModels() {
             gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in model matrix
         }
         if (sphere.type == "missile") {
-            if (missilecount < 1000 && whichSphere > 7) {
+            if (missilecount < 1500 && whichSphere > 7) {
                 missilecount++;
                 continue;
             }
@@ -501,6 +505,7 @@ function renderModels() {
                 if (distance <= sphere.r + inputSpheres[whichSphere - 3].r) {
                     sphere.alive = false;
                     inputSpheres[whichSphere - 3].alive = false;
+                    explosion.play();
                 }
             } else {
                 angle = Math.atan2(sphere.y - inputTriangles[whichSphere - 6].center[1], sphere.x - inputTriangles[whichSphere - 6].center[0]);
@@ -508,6 +513,7 @@ function renderModels() {
                 if (distance <= sphere.r) {
                     sphere.alive = false;
                     inputTriangles[whichSphere - 6].alive = false;
+                    explosion.play();
                 }
             }
             mat4.translate(sphere.mMatrix, sphere.mMatrix, [-mspeed * Math.cos(angle), -mspeed * Math.sin(angle), 0]);
@@ -527,6 +533,7 @@ function renderModels() {
                     sphere.alive = false;
                     sphere1.alive = false;
                     score += 100;
+                    explosion.play();
                     drawscore(context);
                     break;
                 }
