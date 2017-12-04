@@ -36,7 +36,7 @@ var shininessULoc; // where to put specular exponent for fragment shader
 var anticount = 12;
 var missilecount = 0;
 var score = 0;
-var ammos = 3;
+var ammos = 9;
 
 var Eye = vec3.clone(defaultEye); // eye position in world space
 // ASSIGNMENT HELPER FUNCTIONS
@@ -70,6 +70,7 @@ function getJSONFile(url, descr) {
 
 
 function handleclick(e) {
+    if (anticount > 20) return;
     var x = (e.pageX - 400) / 400;
     var y = -(e.pageY - 400) / 400;
     console.log("x= " + x + "y= " + y);
@@ -521,7 +522,7 @@ function renderModels() {
                 var sphere1 = inputSpheres[i];
                 var center2 = vec4.fromValues(sphere1.x, sphere1.y, sphere1.z, 1.0);
                 mat4.multiply(center2, sphere1.mMatrix, center2);
-                //console.log(getdist(center1[0] - center2[0], center1[1] - center2[1]));
+
                 if (getdist(center1[0] - center2[0], center1[1] - center2[1]) <= sphere.r + sphere1.r) {
                     sphere.alive = false;
                     sphere1.alive = false;
