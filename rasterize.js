@@ -3,6 +3,8 @@
 /* assignment specific globals */
 const INPUT_TRIANGLES_URL = "./cubes.json"; // triangles file loc
 const INPUT_SPHERES_URL = "./spheres.json"; // ellipsoids file loc
+const SUCCESS = true;
+const FAIL = false;
 
 var context;
 var defaultEye = vec3.fromValues(0, 0, -0.5); // default eye position in world space
@@ -37,6 +39,10 @@ var anticount = 12;
 var missilecount = 0;
 var score = 0;
 var ammos = 12;
+var miss_remain = 9;
+var buil_remain = 6;
+var level = 1;
+var fail = false;
 
 var Eye = vec3.clone(defaultEye); // eye position in world space
 var explosion = new Audio('explosion.mp3');
@@ -61,7 +67,7 @@ function getJSONFile(url, descr) {
             else
                 return JSON.parse(httpReq.response);
         } // end if good params
-    } // end try    
+    } // end try
 
     catch (e) {
         console.log(e);
@@ -137,8 +143,24 @@ function drawscore(context) {
     context.beginPath();
 
     context.font = "20px Arial";
-    context.fillText("Score: " + score, 700, 20);
-    context.fillText("Ammo: " + ammos, 700, 45);
+    context.fillText("Level: " + level, 0, 20);
+    context.fillText("Score: " + score, 0, 45);
+    context.fillText("Ammo: " + ammos, 0, 70);
+    context.stroke();
+}
+
+function drawend(context, status) {
+    context.beginPath();
+
+    context.font = "40px Times New Roman";
+    context.fillStyle = 'red';
+    if (status) {
+        context.fillText("Mission Success!", 250, 300);
+    } else {
+        fail = true;
+        context.fillText("Mission Failed", 250, 300);
+    }
+
     context.stroke();
 }
 
@@ -199,7 +221,7 @@ function loadModels() {
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleBuffers[whichSet]); // activate that buffer
                 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(inputTriangles[whichSet].glTriangles), gl.STATIC_DRAW); // data in
 
-            } // end for each triangle set 
+            } // end for each triangle set
 
             inputSpheres = getJSONFile(INPUT_SPHERES_URL, "ellipsoids"); // read in the ellipsoids
             numSpheres = inputSpheres.length;
@@ -417,7 +439,7 @@ function setupShaders() {
 
             } // end if no shader program link errors
         } // end if no compile errors
-    } // end try 
+    } // end try
 
     catch (e) {
         console.log(e);
@@ -428,10 +450,38 @@ function getdist(xv, yv) {
     return Math.sqrt(xv * xv + yv * yv);
 }
 
+function newlevel() {
+    if (level == 3) {
+        drawend(context, SUCCESS);
+        return;
+    }
+    miss_remain = 9;
+    ammos = 12;
+    anticount = 12;
+    missilecount = 0;
+    var sphere;
+    for (var whichSet = 0; whichSet < inputSpheres.length; whichSet++) {
+        sphere = inputSpheres[whichSet];
+        if (inputSpheres[whichSet].type != "battery") {
+            inputSpheres[whichSet].mMatrix = mat4.create();
+        } else {
+            inputSpheres[whichSet].ammo = 4;
+        }
+        inputSpheres[whichSet].alive = inputSpheres[whichSet].type != "anti";
+
+    }
+    mspeed += 0.001;
+    level++;
+    drawscore(context);
+}
+
 var mspeed = 0.001;
 var antispeed = 0.015;
 // render the loaded model
 function renderModels() {
+    if (buil_remain == 0) drawend(context, FAIL);
+    if (miss_remain == 0 && !fail) newlevel();
+
     var pMatrix = mat4.create(); // projection matrix
     var vMatrix = mat4.create(); // view matrix
     var mMatrix = mat4.create(); // model matrix
@@ -499,6 +549,7 @@ function renderModels() {
                 missilecount++;
                 continue;
             }
+
             mat4.multiply(center1, sphere.mMatrix, center1);
             if (whichSphere <= 5) {
                 angle = Math.atan2(sphere.y - inputSpheres[whichSphere - 3].y, sphere.x - inputSpheres[whichSphere - 3].x);
@@ -509,14 +560,18 @@ function renderModels() {
                     explosion.play();
                     ammos -= inputSpheres[whichSphere - 3].ammo;
                     drawscore(context);
+                    miss_remain--;
                 }
             } else {
                 angle = Math.atan2(sphere.y - inputTriangles[whichSphere - 6].center[1], sphere.x - inputTriangles[whichSphere - 6].center[0]);
                 distance = getdist(center1[1] - inputTriangles[whichSphere - 6].center[1], center1[0] - inputTriangles[whichSphere - 6].center[0]);
                 if (distance <= sphere.r) {
+                    if (inputTriangles[whichSphere - 6].alive) buil_remain--;
                     sphere.alive = false;
                     inputTriangles[whichSphere - 6].alive = false;
                     explosion.play();
+                    miss_remain--;
+
                 }
             }
             mat4.translate(sphere.mMatrix, sphere.mMatrix, [-mspeed * Math.cos(angle), -mspeed * Math.sin(angle), 0]);
@@ -538,6 +593,7 @@ function renderModels() {
                     score += 100;
                     explosion.play();
                     drawscore(context);
+                    miss_remain--;
                     break;
                 }
             }
