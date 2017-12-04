@@ -4,7 +4,7 @@
 const INPUT_TRIANGLES_URL = "./cubes.json"; // triangles file loc
 const INPUT_SPHERES_URL = "./spheres.json"; // ellipsoids file loc
 
-
+var context;
 var defaultEye = vec3.fromValues(0, 0, -0.5); // default eye position in world space
 var defaultCenter = vec3.fromValues(0, 0, 0.5); // default view direction in world space
 var defaultUp = vec3.fromValues(0, 1, 0); // default view up vector
@@ -32,6 +32,11 @@ var ambientULoc; // where to put ambient reflecivity for fragment shader
 var diffuseULoc; // where to put diffuse reflecivity for fragment shader
 var specularULoc; // where to put specular reflecivity for fragment shader
 var shininessULoc; // where to put specular exponent for fragment shader
+
+var anticount = 12;
+var missilecount = 0;
+var score = 0;
+var ammos = 3;
 
 var Eye = vec3.clone(defaultEye); // eye position in world space
 // ASSIGNMENT HELPER FUNCTIONS
@@ -63,18 +68,41 @@ function getJSONFile(url, descr) {
     }
 } // end get input json file
 
+
+function handleclick(e) {
+    var x = (e.pageX - 400) / 400;
+    var y = -(e.pageY - 400) / 400;
+    console.log("x= " + x + "y= " + y);
+    var battery_num = inputSpheres[anticount].battery;
+    if (inputSpheres[battery_num].alive) {
+        ammos--;
+        drawscore(context);
+        inputSpheres[anticount].status = true;
+        inputSpheres[anticount].destination = [x, y];
+        inputSpheres[anticount].angle = Math.atan2(y - inputSpheres[anticount].y, x - inputSpheres[anticount].x);
+    }
+    anticount++;
+}
+var bkgdImage = new Image();
+var cw, ch, iw, ih;
 // set up the webGL environment
 function setupWebGL() {
+
+    document.addEventListener("click", handleclick);
     // Get the image canvas, render an image in it
     var imageCanvas = document.getElementById("myImageCanvas"); // create a 2d canvas
-    var cw = imageCanvas.width, ch = imageCanvas.height;
+
     imageContext = imageCanvas.getContext("2d");
-    var bkgdImage = new Image();
+    context = imageCanvas.getContext("2d");
+    cw = imageCanvas.width;
+    ch = imageCanvas.height;
     bkgdImage.crossOrigin = "Anonymous";
     bkgdImage.src = "./sky2.jpg";
     bkgdImage.onload = function () {
-        var iw = bkgdImage.width, ih = bkgdImage.height;
+        iw = bkgdImage.width;
+        ih = bkgdImage.height;
         imageContext.drawImage(bkgdImage, 0, 0, iw, ih, 0, 0, cw, ch);
+        drawscore(context);
     } // end onload callback
 
     // create a webgl canvas and set it up
@@ -94,6 +122,20 @@ function setupWebGL() {
         console.log(e);
     } // end catch
 } // end setupWebGL
+
+function drawscore(context) {
+
+    context.clearRect(0, 0, 800, 800);
+
+    imageContext.drawImage(bkgdImage, 0, 0, iw, ih, 0, 0, cw, ch);
+    context.beginPath();
+
+    context.font = "20px Arial";
+    context.fillText("Score: " + score, 700, 20);
+    context.fillText("Ammo: " + ammos, 700, 40);
+    context.stroke();
+}
+
 
 // read models in, load them into webgl buffers
 function loadModels() {
@@ -164,7 +206,7 @@ function loadModels() {
                 var longitudeBands = 30;
 
                 for (var whichSet = 0; whichSet < inputSpheres.length; whichSet++) {
-                    if (inputSpheres[whichSet].type == "missile") {
+                    if (inputSpheres[whichSet].type != "battery") {
                         inputSpheres[whichSet].mMatrix = mat4.create();
                     }
                     inputSpheres[whichSet].alive = true;
@@ -375,7 +417,12 @@ function setupShaders() {
     } // end catch
 } // end setup shaders
 
-var speed = 0.002;
+function getdist(xv, yv) {
+    return Math.sqrt(xv * xv + yv * yv);
+}
+
+var mspeed = 0.002;
+var antispeed = 0.01;
 // render the loaded model
 function renderModels() {
     var pMatrix = mat4.create(); // projection matrix
@@ -430,7 +477,9 @@ function renderModels() {
 
     for (var whichSphere = 0; whichSphere < inputSpheres.length; whichSphere++) {
         sphere = inputSpheres[whichSphere];
-
+        if (!sphere.alive) {
+            continue;
+        }
         var angle;
         var distance;
         var center1 = vec4.fromValues(sphere.x, sphere.y, sphere.z, 1.0);
@@ -439,35 +488,40 @@ function renderModels() {
             gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in model matrix
         }
         if (sphere.type == "missile") {
+            if (missilecount < 1000 && whichSphere > 7) {
+                missilecount++;
+                continue;
+            }
             mat4.multiply(center1, sphere.mMatrix, center1);
             if (whichSphere <= 5) {
                 angle = Math.atan2(sphere.y - inputSpheres[whichSphere - 3].y, sphere.x - inputSpheres[whichSphere - 3].x);
-                distance = Math.sqrt(
-                    (center1[1] - inputSpheres[whichSphere - 3].y) * (center1[1] - inputSpheres[whichSphere - 3].y) +
-                    (center1[0] - inputSpheres[whichSphere - 3].x) * (center1[0] - inputSpheres[whichSphere - 3].x)
-                )
+                distance = getdist(center1[0] - inputSpheres[whichSphere - 3].x, center1[1] - inputSpheres[whichSphere - 3].y);
                 if (distance <= sphere.r + inputSpheres[whichSphere - 3].r) {
                     sphere.alive = false;
                     inputSpheres[whichSphere - 3].alive = false;
                 }
             } else {
                 angle = Math.atan2(sphere.y - inputTriangles[whichSphere - 6].center[1], sphere.x - inputTriangles[whichSphere - 6].center[0]);
-                distance = Math.sqrt(
-                    (center1[1] - inputTriangles[whichSphere - 6].center[1]) * (center1[1] - inputTriangles[whichSphere - 6].center[1]) +
-                    (center1[0] - inputTriangles[whichSphere - 6].center[0]) * (center1[0] - inputTriangles[whichSphere - 6].center[0])
-                )
+                distance = getdist(center1[1] - inputTriangles[whichSphere - 6].center[1], center1[0] - inputTriangles[whichSphere - 6].center[0]);
                 if (distance <= sphere.r) {
                     sphere.alive = false;
                     inputTriangles[whichSphere - 6].alive = false;
                 }
             }
-            mat4.translate(sphere.mMatrix, sphere.mMatrix, [-speed * Math.cos(angle), -speed * Math.sin(angle), 0]);
+            mat4.translate(sphere.mMatrix, sphere.mMatrix, [-mspeed * Math.cos(angle), -mspeed * Math.sin(angle), 0]);
             pvmMatrix = mat4.multiply(pvmMatrix, pvMatrix, sphere.mMatrix);
             gl.uniformMatrix4fv(mMatrixULoc, false, sphere.mMatrix); // pass in model matrix
         }
-
-        if (!sphere.alive) {
-            continue;
+        if (sphere.type == "anti") {
+            if (!sphere.status) continue;
+            mat4.multiply(center1, sphere.mMatrix, center1);
+            if (getdist(center1[0] - sphere.destination[0], center1[1] - sphere.destination[1]) <= 0.005) {
+                sphere.status = false;
+                continue;
+            }
+            mat4.translate(sphere.mMatrix, sphere.mMatrix, [antispeed * Math.cos(sphere.angle), antispeed * Math.sin(sphere.angle), 0]);
+            pvmMatrix = mat4.multiply(pvmMatrix, pvMatrix, sphere.mMatrix);
+            gl.uniformMatrix4fv(mMatrixULoc, false, sphere.mMatrix); // pass in model matrix
         }
         gl.uniformMatrix4fv(pvmMatrixULoc, false, pvmMatrix); // pass in the hpvm matrix
 
