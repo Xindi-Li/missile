@@ -598,7 +598,7 @@ function renderModels() {
                 }
             }
             if (!sphere.alive) continue;
-            if (getdist(center1[0] - sphere.destination[0], center1[1] - sphere.destination[1]) <= 0.005) {
+            if (getdist(center1[0] - sphere.destination[0], center1[1] - sphere.destination[1]) <= 0.01) {
                 sphere.alive = false;
                 continue;
             }
